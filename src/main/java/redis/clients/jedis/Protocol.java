@@ -79,6 +79,12 @@ public final class Protocol {
     // this prevent the class from instantiation
   }
 
+  /**
+   * 按照Redis统一请求协议组织Redis命令，写入RedisOutputStream
+   * @param os
+   * @param command
+   * @param args
+   */
   public static void sendCommand(final RedisOutputStream os, final Command command,
       final byte[]... args) {
     sendCommand(os, command.raw, args);
@@ -146,18 +152,23 @@ public final class Protocol {
     return response;
   }
 
+    /**
+     * 通过检查服务器发回的第一个字节，确定这个回复是什么类型，分别交由下面5个函数处理
+     * @param is
+     * @return
+     */
   private static Object process(final RedisInputStream is) {
 
     final byte b = is.readByte();
-    if (b == PLUS_BYTE) {
+    if (b == PLUS_BYTE) { // 处理状态回复
       return processStatusCodeReply(is);
-    } else if (b == DOLLAR_BYTE) {
+    } else if (b == DOLLAR_BYTE) { // 处理批量回复
       return processBulkReply(is);
-    } else if (b == ASTERISK_BYTE) {
+    } else if (b == ASTERISK_BYTE) { // 处理多条批量回复
       return processMultiBulkReply(is);
-    } else if (b == COLON_BYTE) {
+    } else if (b == COLON_BYTE) { // 处理参数回复
       return processInteger(is);
-    } else if (b == MINUS_BYTE) {
+    } else if (b == MINUS_BYTE) { // 处理错误回复
       processError(is);
       return null;
     } else {
@@ -211,6 +222,11 @@ public final class Protocol {
     return ret;
   }
 
+    /**
+     * 从RedisInputStream中读取服务器的回复，此处阻塞等待，调用process方法处理消息
+     * @param is
+     * @return
+     */
   public static Object read(final RedisInputStream is) {
     return process(is);
   }
@@ -234,6 +250,9 @@ public final class Protocol {
     return SafeEncoder.encode(String.valueOf(value));
   }
 
+    /**
+     * 将Redis命令封装成枚举或者string
+     */
   public static enum Command {
     PING, SET, GET, QUIT, EXISTS, DEL, TYPE, FLUSHDB, KEYS, RANDOMKEY, RENAME, RENAMENX, RENAMEX, DBSIZE, EXPIRE, EXPIREAT, TTL, SELECT, MOVE, FLUSHALL, GETSET, MGET, SETNX, SETEX, MSET, MSETNX, DECRBY, DECR, INCRBY, INCR, APPEND, SUBSTR, HSET, HGET, HSETNX, HMSET, HMGET, HINCRBY, HEXISTS, HDEL, HLEN, HKEYS, HVALS, HGETALL, RPUSH, LPUSH, LLEN, LRANGE, LTRIM, LINDEX, LSET, LREM, LPOP, RPOP, RPOPLPUSH, SADD, SMEMBERS, SREM, SPOP, SMOVE, SCARD, SISMEMBER, SINTER, SINTERSTORE, SUNION, SUNIONSTORE, SDIFF, SDIFFSTORE, SRANDMEMBER, ZADD, ZRANGE, ZREM, ZINCRBY, ZRANK, ZREVRANK, ZREVRANGE, ZCARD, ZSCORE, MULTI, DISCARD, EXEC, WATCH, UNWATCH, SORT, BLPOP, BRPOP, AUTH, SUBSCRIBE, PUBLISH, UNSUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, PUBSUB, ZCOUNT, ZRANGEBYSCORE, ZREVRANGEBYSCORE, ZREMRANGEBYRANK, ZREMRANGEBYSCORE, ZUNIONSTORE, ZINTERSTORE, ZLEXCOUNT, ZRANGEBYLEX, ZREVRANGEBYLEX, ZREMRANGEBYLEX, SAVE, BGSAVE, BGREWRITEAOF, LASTSAVE, SHUTDOWN, INFO, MONITOR, SLAVEOF, CONFIG, STRLEN, SYNC, LPUSHX, PERSIST, RPUSHX, ECHO, LINSERT, DEBUG, BRPOPLPUSH, SETBIT, GETBIT, BITPOS, SETRANGE, GETRANGE, EVAL, EVALSHA, SCRIPT, SLOWLOG, OBJECT, BITCOUNT, BITOP, SENTINEL, DUMP, RESTORE, PEXPIRE, PEXPIREAT, PTTL, INCRBYFLOAT, PSETEX, CLIENT, TIME, MIGRATE, HINCRBYFLOAT, SCAN, HSCAN, SSCAN, ZSCAN, WAIT, CLUSTER, ASKING, PFADD, PFCOUNT, PFMERGE, READONLY, GEOADD, GEODIST, GEOHASH, GEOPOS, GEORADIUS, GEORADIUSBYMEMBER, BITFIELD;
 
